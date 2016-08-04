@@ -1,0 +1,4 @@
+dist
+.config*
+*.db
+teleproxy_linux_amd64*

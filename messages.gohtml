@@ -1,0 +1,42 @@
+{{ define "welcome" }}
+Здравствуйте. Я - бот tender.pro. Слушаю Вас.
+{{ end }}
+{{ define "info" }}
+{{ if eq .Text ".new"}}Новый клиент {{ end }}{{ .User.Code }} = FirstName: {{ .User.FirstName }} LastName: {{ .User.LastName }} Username: @{{ .User.Username }}
+{{ end }}
+{{ define "hello"}}
+Привет, {{ .User.FirstName }}!
+{{ end }}
+{{ define "helpOp" }}
+Формат ответа:  /номер Текст ответа
+Запрос деталей: /номер =
+Блокировать:    /номер -
+Разблокировать: /номер +
+{{ end }}
+{{ define "errNoDigit" }}
+Неправильный формат: {{ .Text }}, должно быть число
+{{ end }}
+{{ define "errNoUser" }}
+Неизвестный адресат: {{ .Text }}
+{{ end }}
+{{ define "message"}}
+{{ .User.Code }}: {{ .Text}}
+{{ end }}
+{{ define "userLocked"}}
+Извините, прием сообщений от вас заблокирован
+{{ end }}
+{{ define "errState1"}}
+Ошибка блокировки пользователя {{ .User.Code }}: {{ .Text }}
+{{ end }}
+{{ define "userState1"}}
+Пользователь {{ .User.Code }} заблокирован
+{{ end }}
+{{ define "errState0"}}
+Ошибка разблокировки пользователя {{ .User.Code }}: {{ .Text }}
+{{ end }}
+{{ define "userState0"}}
+Пользователь {{ .User.Code }} разблокирован
+{{ end }}
+{{ define "userStateKeep"}}
+Статус пользователя {{ .User.Code }} совпадает с запрошенным
+{{ end }}
