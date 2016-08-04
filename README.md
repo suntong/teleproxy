@@ -1,6 +1,6 @@
 
-dbrpc
-=====
+teleproxy
+=========
 
 [![GoCard][1]][2]
 [![GitHub license][3]][4]
