@@ -31,6 +31,8 @@ Features
 ### ToDo
 
 * tests
+* correct reply on 'joined the group via invite link'
+* file transfer
 
 Install
 -------

@@ -1,5 +1,5 @@
 {{ define "welcome" }}
-Здравствуйте. Я - бот tender.pro. Слушаю Вас.
+Здравствуйте. Я - бот elfire.ru. Слушаю Вас.
 {{ end }}
 {{ define "info" }}
 {{ if eq .Text ".new"}}Новый клиент {{ end }}{{ .User.Code }} = FirstName: {{ .User.FirstName }} LastName: {{ .User.LastName }} Username: @{{ .User.Username }}
@@ -34,9 +34,15 @@
 {{ define "errState0"}}
 Ошибка разблокировки пользователя {{ .User.Code }}: {{ .Text }}
 {{ end }}
+{{ define "errNoCmd" }}
+Неизвестная команда: {{ .Text }}
+{{ end }}
 {{ define "userState0"}}
 Пользователь {{ .User.Code }} разблокирован
 {{ end }}
 {{ define "userStateKeep"}}
 Статус пользователя {{ .User.Code }} совпадает с запрошенным
+{{ end }}
+{{ define "cmdRequest" }}
+Выполняю команду: {{ .Text }}
 {{ end }}

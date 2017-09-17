@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"os/exec"
 	"os/signal"
 	"path"
 	"runtime"
@@ -24,17 +25,18 @@ import (
 
 // Flags defines local application flags
 type Flags struct {
-	Group    int64  `long:"group"    description:"Telegram group ID (without -)"`
-	Token    string `long:"token"    description:"Bot token"`
-	Template string `long:"template" default:"messages.gohtml" description:"Message template"`
-	Version  bool   `long:"version"  description:"Show version and exit"`
+	Group    int64    `long:"group"    description:"Telegram group ID (without -)"`
+	Token    string   `long:"token"    description:"Bot token"`
+	Template string   `long:"template" default:"messages.gohtml" description:"Message template"`
+	Commands []string `long:"command"  description:"Allowed command(s)"`
+	Version  bool     `long:"version"  description:"Show version and exit"`
 }
 
 // Config defines all of application flags
 type Config struct {
 	Flags
-	log logger.Flags
-	db  database.Flags
+	Logger logger.Flags   `group:"Logging Options"`
+	DB     database.Flags `group:"Database Options"`
 }
 
 // Customer - таблица журнала сообщений
@@ -64,7 +66,7 @@ func main() {
 
 	Program := path.Base(os.Args[0])
 	log.Infof("%s v %s. Telegram proxy bot", Program, Version)
-	log.Println("Copyright (C) 2016, Alexey Kovrizhkin <ak@elfire.ru>")
+	log.Println("Copyright (C) 2017, Alexey Kovrizhkin <ak@elfire.ru>")
 
 	run(cfg, log, db)
 
@@ -73,29 +75,15 @@ func main() {
 
 // -----------------------------------------------------------------------------
 
-func makeConfig(cfg *Config) *flags.Parser {
-	p := flags.NewParser(nil, flags.Default)
-	_, err := p.AddGroup("Application Options", "", cfg)
-	panicIfError(err) // check Flags parse error
-
-	_, err = p.AddGroup("Logging Options", "", &cfg.log)
-	panicIfError(err) // check Flags parse error
-
-	_, err = p.AddGroup("Database Options", "", &cfg.db)
-	panicIfError(err)
-
-	return p
-}
-
-// -----------------------------------------------------------------------------
-
 func setUp(cfg *Config) (log *logger.Log, db *database.DB, err error) {
 
-	p := makeConfig(cfg)
-
-	_, err = p.Parse()
+	_, err = flags.Parse(cfg)
 	if err != nil {
-		os.Exit(1) // error message written already
+		if e, ok := err.(*flags.Error); ok && e.Type == flags.ErrHelp {
+			os.Exit(1) // help printed
+		} else {
+			os.Exit(2) // error message written already
+		}
 	}
 	if cfg.Version {
 		// show version & exit
@@ -107,24 +95,22 @@ func setUp(cfg *Config) (log *logger.Log, db *database.DB, err error) {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	// Create a new instance of the logger
-	log, err = logger.New(logger.Dest(cfg.log.Dest), logger.Level(cfg.log.Level))
-	panicIfError(err) // check Flags parse error
+	log, err = logger.New(logger.Dest(cfg.Logger.Dest), logger.Level(cfg.Logger.Level))
+	if err != nil {
+		panic("Logger init error: " + err.Error())
+	}
 
 	// Setup database
-	db, err = database.New(cfg.db.Driver, cfg.db.Connect, database.Debug(cfg.db.Debug))
-	panicIfError(err) // check Flags parse error
+	db, err = database.New(cfg.DB.Driver, cfg.DB.Connect, database.Debug(cfg.DB.Debug))
+	stopOnError(log, err, "DB init")
 
 	// Sync database
 	err = db.Engine.Sync(new(Customer))
-	if err != nil {
-		log.Fatalf("DB sync error: %v", err)
-	}
+	stopOnError(log, err, "DB customer sync")
 	err = db.Engine.Sync(new(Record))
-	if err != nil {
-		log.Fatalf("DB sync error: %v", err)
-	}
+	stopOnError(log, err, "DB record sync")
 
-	// option without "-"
+	// group id in config > 0 but we need < 0
 	cfg.Group = cfg.Group * -1
 
 	return
@@ -132,11 +118,15 @@ func setUp(cfg *Config) (log *logger.Log, db *database.DB, err error) {
 
 // -----------------------------------------------------------------------------
 
-func panicIfError(err error) {
+// stopOnError used internally for fatal errors checking
+func stopOnError(log *logger.Log, err error, info string) {
 	if err != nil {
-		panic(err)
+		log.Fatalf("Error with %s: %v", info, err)
 	}
+
 }
+
+// -----------------------------------------------------------------------------
 
 // Application holds app.Say
 type Application struct {
@@ -163,6 +153,23 @@ func (app Application) Say(code string, chat telebot.Recipient, user Customer, t
 
 }
 
+// -----------------------------------------------------------------------------
+
+// Exec runs external command
+func (app Application) Exec(cmd string, chat telebot.Recipient) {
+
+	out, err := exec.Command("./" + cmd + ".sh").Output()
+	// Записать в логи результат скрипта
+	if err != nil {
+		app.Log.Warnf("cmd ERROR: %+v (%s)", err, out)
+		app.Bot.SendMessage(chat, "*Ошибка:* "+err.Error(), &telebot.SendOptions{ParseMode: telebot.ModeMarkdown})
+	} else {
+		app.Log.Warnf("cmd OUT: %s", out)
+	}
+	app.Bot.SendMessage(chat, string(out), nil)
+}
+
+// loadUser sets Customer fields from telebot.User
 func (u *Customer) loadUser(c telebot.User) {
 	u.FirstName = c.FirstName
 	u.LastName = c.LastName
@@ -171,7 +178,6 @@ func (u *Customer) loadUser(c telebot.User) {
 
 // SetState sets user Disabled state
 func (app Application) SetState(state int, chat telebot.Recipient, user Customer) error {
-	//	affected, err := app.DB.Engine.Id(user.Code).Cols("disabled").Update(Customer{Disabled: state})
 
 	sql := "update customer set disabled = ? where id = ? and disabled <> ?"
 	res, err := app.DB.Engine.Exec(sql, state, user.ID, state)
@@ -202,10 +208,10 @@ func (app Application) SetState(state int, chat telebot.Recipient, user Customer
 func run(cfg Config, log *logger.Log, db *database.DB) {
 
 	bot, err := telebot.NewBot(cfg.Token)
-	panicIfError(err)
+	stopOnError(log, err, "Bot init")
 
 	tmpl, err := template.New("").ParseFiles(cfg.Template)
-	panicIfError(err)
+	stopOnError(log, err, "Template load")
 
 	app := Application{
 		Log:      log,
@@ -268,6 +274,17 @@ func run(cfg Config, log *logger.Log, db *database.DB) {
 
 			// split customer Code & rest
 			reply := strings.SplitN(strings.TrimPrefix(message.Text, "/"), " ", 2)
+			if len(reply) == 1 {
+				// run internal command
+				if stringExists(cfg.Commands, reply[0]) {
+					app.Say("cmdRequest", message.Chat, sender, reply[0])
+					go app.Exec(reply[0], message.Chat)
+				} else {
+					app.Say("errNoCmd", message.Chat, sender, reply[0])
+				}
+				continue
+			}
+
 			c, err := strconv.ParseUint(reply[0], 10, 64)
 			if err != nil {
 				app.Say("errNoDigit", message.Chat, sender, reply[0])
@@ -284,26 +301,22 @@ func run(cfg Config, log *logger.Log, db *database.DB) {
 			} else if len(reply) == 2 {
 				// given customer code & something
 				log.Debugf("Customer: %+v", user)
-				if reply[1] == "=" {
+				switch reply[1] {
+				case "=":
 					// customer info requested
 					app.Say("info", message.Chat, user, "")
 					continue
-				} else if reply[1] == "" {
-					continue
-				}
-				if reply[1] == "-" {
+				case "-":
 					// lock user
 					if app.SetState(1, message.Chat, user) != nil {
 						continue
 					}
-
-				} else if reply[1] == "+" {
+				case "+":
 					// unlock user
 					if app.SetState(0, message.Chat, user) != nil {
 						continue
 					}
-
-				} else {
+				default:
 					// forward reply to customer
 					chat := telebot.Chat{ID: user.ID, Type: "private"}
 					bot.SendMessage(chat, reply[1], nil)
@@ -343,4 +356,18 @@ func run(cfg Config, log *logger.Log, db *database.DB) {
 	}
 	log.Info("Exiting")
 
+}
+
+// -----------------------------------------------------------------------------
+
+// Check if str exists in strings slice
+func stringExists(strings []string, str string) bool {
+	if len(strings) > 0 {
+		for _, s := range strings {
+			if str == s {
+				return true
+			}
+		}
+	}
+	return false
 }
