@@ -1,5 +1,5 @@
 {{ define "welcome" }}
-Здравствуйте. Я - бот elfire.ru. Слушаю Вас.
+Добро пожаловать в службу поддержки! Чем мы можем помочь?
 {{ end }}
 {{ define "info" }}
 {{ if eq .Text ".new"}}Новый клиент {{ end }}{{ .User.Code }} = FirstName: {{ .User.FirstName }} LastName: {{ .User.LastName }} Username: @{{ .User.Username }}

@@ -3,18 +3,12 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"os"
 	"os/exec"
-	"os/signal"
-	"path"
-	"runtime"
 	"strconv"
 	"strings"
-	"syscall"
 	"text/template"
 	"time"
 
-	"github.com/jessevdk/go-flags"
 	"github.com/tucnak/telebot"
 
 	"github.com/LeKovr/go-base/database"
@@ -23,117 +17,13 @@ import (
 
 // -----------------------------------------------------------------------------
 
-// Flags defines local application flags
-type Flags struct {
-	Group    int64    `long:"group"    description:"Telegram group ID (without -)"`
-	Token    string   `long:"token"    description:"Bot token"`
-	Template string   `long:"template" default:"messages.gohtml" description:"Message template"`
-	Commands []string `long:"command"  description:"Allowed command(s)"`
-	Version  bool     `long:"version"  description:"Show version and exit"`
-}
-
-// Config defines all of application flags
-type Config struct {
-	Flags
-	Logger logger.Flags   `group:"Logging Options"`
-	DB     database.Flags `group:"Database Options"`
-}
-
-// Customer - таблица журнала сообщений
-type Customer struct {
-	Code                          uint64 `xorm:"pk autoincr"`
-	ID                            int64  `xorm:"id unique not null"`
-	FirstName, LastName, Username string
-	Stamp                         time.Time `xorm:"not null created"`
-	Disabled                      int       `xorm:"not null"` // 1 - log only, 2 - full
-}
-
-// Record - таблица журнала сообщений
-type Record struct {
-	Stamp   time.Time `xorm:"pk created"`
-	ID      int64     `xorm:"id pk not null"`
-	IDFrom  int64     `xorm:"id_from"`
-	Message string
-}
-
-// -----------------------------------------------------------------------------
-
-func main() {
-
-	var cfg Config
-	log, db, _ := setUp(&cfg)
-	defer log.Close()
-
-	Program := path.Base(os.Args[0])
-	log.Infof("%s v %s. Telegram proxy bot", Program, Version)
-	log.Println("Copyright (C) 2017, Alexey Kovrizhkin <ak@elfire.ru>")
-
-	run(cfg, log, db)
-
-	os.Exit(0)
-}
-
-// -----------------------------------------------------------------------------
-
-func setUp(cfg *Config) (log *logger.Log, db *database.DB, err error) {
-
-	_, err = flags.Parse(cfg)
-	if err != nil {
-		if e, ok := err.(*flags.Error); ok && e.Type == flags.ErrHelp {
-			os.Exit(1) // help printed
-		} else {
-			os.Exit(2) // error message written already
-		}
-	}
-	if cfg.Version {
-		// show version & exit
-		fmt.Printf("%s\n%s\n%s", Version, Build, Commit)
-		os.Exit(0)
-	}
-
-	// use all CPU cores for maximum performance
-	runtime.GOMAXPROCS(runtime.NumCPU())
-
-	// Create a new instance of the logger
-	log, err = logger.New(logger.Dest(cfg.Logger.Dest), logger.Level(cfg.Logger.Level))
-	if err != nil {
-		panic("Logger init error: " + err.Error())
-	}
-
-	// Setup database
-	db, err = database.New(cfg.DB.Driver, cfg.DB.Connect, database.Debug(cfg.DB.Debug))
-	stopOnError(log, err, "DB init")
-
-	// Sync database
-	err = db.Engine.Sync(new(Customer))
-	stopOnError(log, err, "DB customer sync")
-	err = db.Engine.Sync(new(Record))
-	stopOnError(log, err, "DB record sync")
-
-	// group id in config > 0 but we need < 0
-	cfg.Group = cfg.Group * -1
-
-	return
-}
-
-// -----------------------------------------------------------------------------
-
-// stopOnError used internally for fatal errors checking
-func stopOnError(log *logger.Log, err error, info string) {
-	if err != nil {
-		log.Fatalf("Error with %s: %v", info, err)
-	}
-
-}
-
-// -----------------------------------------------------------------------------
-
 // Application holds app.Say
 type Application struct {
-	Bot      *telebot.Bot
 	DB       *database.DB
-	Template *template.Template
 	Log      *logger.Log
+	bot      *telebot.Bot
+	template *template.Template
+	messages chan telebot.Message
 }
 
 // Say loads message from template and sais it to chat
@@ -147,9 +37,9 @@ func (app Application) Say(code string, chat telebot.Recipient, user Customer, t
 	}
 	buf := new(bytes.Buffer)
 	//err :=
-	app.Template.ExecuteTemplate(buf, code, vars)
+	app.template.ExecuteTemplate(buf, code, vars)
 
-	app.Bot.SendMessage(chat, buf.String(), nil)
+	app.bot.SendMessage(chat, buf.String(), nil)
 
 }
 
@@ -162,11 +52,11 @@ func (app Application) Exec(cmd string, chat telebot.Recipient) {
 	// Записать в логи результат скрипта
 	if err != nil {
 		app.Log.Warnf("cmd ERROR: %+v (%s)", err, out)
-		app.Bot.SendMessage(chat, "*Ошибка:* "+err.Error(), &telebot.SendOptions{ParseMode: telebot.ModeMarkdown})
+		app.bot.SendMessage(chat, "*Ошибка:* "+err.Error(), &telebot.SendOptions{ParseMode: telebot.ModeMarkdown})
 	} else {
 		app.Log.Warnf("cmd OUT: %s", out)
 	}
-	app.Bot.SendMessage(chat, string(out), nil)
+	app.bot.SendMessage(chat, string(out), nil)
 }
 
 // loadUser sets Customer fields from telebot.User
@@ -205,42 +95,38 @@ func (app Application) SetState(state int, chat telebot.Recipient, user Customer
 
 // -----------------------------------------------------------------------------
 
-func run(cfg Config, log *logger.Log, db *database.DB) {
+// Close closes message channel
+func (app Application) Close() {
+	if app.messages != nil {
+		close(app.messages)
+	}
+}
+
+// -----------------------------------------------------------------------------
+
+// Run does the deal
+func (app *Application) Run(cfg Config) {
 
 	bot, err := telebot.NewBot(cfg.Token)
-	stopOnError(log, err, "Bot init")
+	stopOnError(app.Log, err, "Bot init")
+	app.bot = bot
 
 	tmpl, err := template.New("").ParseFiles(cfg.Template)
-	stopOnError(log, err, "Template load")
+	stopOnError(app.Log, err, "Template load")
+	app.template = tmpl
 
-	app := Application{
-		Log:      log,
-		Bot:      bot,
-		Template: tmpl,
-		DB:       db,
-	}
+	app.messages = make(chan telebot.Message)
 
-	engine := db.Engine
-
-	messages := make(chan telebot.Message)
-
-	bot.Listen(messages, 1*time.Second)
-	log.Printf("Connected bot %s", bot.Identity.Username)
-
-	signalChannel := make(chan os.Signal, 2)
-	signal.Notify(signalChannel, os.Interrupt, syscall.SIGTERM)
-	go func() {
-		sig := <-signalChannel
-		log.Infof("Got signal %v", sig)
-		close(messages)
-	}()
+	bot.Listen(app.messages, 1*time.Second)
+	app.Log.Printf("Connected bot %s", bot.Identity.Username)
 
 	group := telebot.Chat{ID: cfg.Group, Type: "group"}
+	engine := app.DB.Engine
 
-	for message := range messages {
+	for message := range app.messages {
 		inChat := message.Chat.ID == cfg.Group
-		log.Debugf("Sender: %+v", message.Sender)
-		log.Debugf("%s: %s", message.Chat.Title, message.Text)
+		app.Log.Debugf("Sender: %+v", message.Sender)
+		app.Log.Debugf("%s: %s", message.Chat.Title, message.Text)
 		sender := Customer{ID: int64(message.Sender.ID)}
 
 		has, _ := engine.Get(&sender) // TODO: err
@@ -248,8 +134,8 @@ func run(cfg Config, log *logger.Log, db *database.DB) {
 			// new customer or op
 			sender.loadUser(message.Sender)
 
-			if _, err := db.Engine.Insert(&sender); err != nil {
-				log.Errorf("User add error: %+v", err)
+			if _, err := engine.Insert(&sender); err != nil {
+				app.Log.Errorf("User add error: %+v", err)
 			}
 			//has, err :=
 			engine.Get(&sender)
@@ -300,7 +186,7 @@ func run(cfg Config, log *logger.Log, db *database.DB) {
 
 			} else if len(reply) == 2 {
 				// given customer code & something
-				log.Debugf("Customer: %+v", user)
+				app.Log.Debugf("Customer: %+v", user)
 				switch reply[1] {
 				case "=":
 					// customer info requested
@@ -324,8 +210,8 @@ func run(cfg Config, log *logger.Log, db *database.DB) {
 
 				// save log
 				rec := Record{ID: user.ID, IDFrom: sender.ID, Message: reply[1]}
-				if _, err := db.Engine.Insert(&rec); err != nil {
-					log.Errorf("Record add error: %+v", err)
+				if _, err := engine.Insert(&rec); err != nil {
+					app.Log.Errorf("Record add error: %+v", err)
 				}
 
 			}
@@ -341,8 +227,8 @@ func run(cfg Config, log *logger.Log, db *database.DB) {
 			// other message
 			if sender.Disabled < 2 {
 				rec := Record{ID: sender.ID, Message: message.Text}
-				if _, err := db.Engine.Insert(&rec); err != nil {
-					log.Errorf("Record add error: %+v", err)
+				if _, err := engine.Insert(&rec); err != nil {
+					app.Log.Errorf("Record add error: %+v", err)
 				}
 
 				if sender.Disabled < 1 {
@@ -354,7 +240,7 @@ func run(cfg Config, log *logger.Log, db *database.DB) {
 		}
 		time.Sleep(time.Second) // wait 1 sec always
 	}
-	log.Info("Exiting")
+	app.Log.Info("Exiting")
 
 }
 

@@ -1,0 +1,48 @@
+hash: f95888ac7ef1b9ea1fa373bf5a0e1ea66c5b89179b21fe3991255eed6d80efbe
+updated: 2017-09-18T00:42:55.404406778+03:00
+imports:
+- name: github.com/armon/go-radix
+  version: 1fca145dffbcaa8fe914309b1ec0cfc67500fe61
+- name: github.com/go-sql-driver/mysql
+  version: be22b3051b3467094e9908389d900e74f72cf08f
+- name: github.com/go-xorm/builder
+  version: c8871c857d2555fbfbd8524f895be5386d3d8836
+- name: github.com/go-xorm/core
+  version: da1adaf7a28ca792961721a34e6e04945200c890
+- name: github.com/go-xorm/xorm
+  version: d9565718bc41c8a6a02f6073979bade790cb3e45
+- name: github.com/jessevdk/go-flags
+  version: 6cf8f02b4ae8ba723ddc64dcfd403e530c06d927
+- name: github.com/LeKovr/go-base
+  version: 7600d06f37f570b808f68437c6f11a6d3f3a7dcf
+  subpackages:
+  - database
+  - logger
+- name: github.com/lib/pq
+  version: e42267488fe361b9dc034be7a6bffef5b195bceb
+  subpackages:
+  - oid
+- name: github.com/mattn/go-sqlite3
+  version: 05548ff55570cdb9ac72ff4a25a3b5e77a6fb7e5
+- name: github.com/mitchellh/hashstructure
+  version: 2bca23e0e452137f789efbc8610126fd8b94f73b
+- name: github.com/pkg/errors
+  version: 2b3a18b5f0fb6b4f9190549597d3f962c02bc5eb
+- name: github.com/Sirupsen/logrus
+  version: 89742aefa4b206dcf400792f3bd35b542998eb3b
+- name: github.com/tucnak/telebot
+  version: 00cebf376d79ee4363a11cd66fbbdf565452e0ab
+- name: golang.org/x/crypto
+  version: 81e90905daefcd6fd217b62423c0908922eadb30
+  subpackages:
+  - ssh/terminal
+- name: golang.org/x/net
+  version: 57efc9c3d9f91fb3277f8da1cff370539c4d3dc5
+  subpackages:
+  - context
+- name: golang.org/x/sys
+  version: 7ddbeae9ae08c6a06a59597f0c9edbc5ff2444ce
+  subpackages:
+  - unix
+  - windows
+testImports: []
