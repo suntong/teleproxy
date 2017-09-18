@@ -14,7 +14,7 @@ services:
     volumes:
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
-      - ./messages.gohtml:/messages.gohtml:ro
+#      - ./messages.gohtml:/messages.gohtml:ro
       - ./../../teleproxy-data:/data
     build:
       context: .

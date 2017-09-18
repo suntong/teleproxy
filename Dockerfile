@@ -9,7 +9,7 @@ RUN echo "Build number: $golang_version"
 
 MAINTAINER Alexey Kovrizhkin <lekovr+docker@gmail.com>
 
-RUN apk add --no-cache make bash git g++
+RUN apk add --no-cache make bash git g++ curl
 
 WORKDIR /go/src/github.com/LeKovr/teleproxy
 # Will fetch git commit ID
@@ -34,7 +34,7 @@ RUN make build
 #FROM scratch
 FROM alpine:3.6
 
-RUN apk add --no-cache make bash
+RUN apk add --no-cache make bash curl
 
 WORKDIR /
 COPY --from=0 /go/src/github.com/LeKovr/teleproxy/cmd/teleproxy/teleproxy .
