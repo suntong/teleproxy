@@ -1,8 +1,9 @@
-package: github.com/LeKovr/teleproxy/cmd/teleproxy
+package: .
 import:
 - package: github.com/LeKovr/go-base
   subpackages:
   - database
-  - logger
+  - log
+- package: github.com/comail/colog
 - package: github.com/jessevdk/go-flags
-- package: github.com/tucnak/telebot
+- package: gopkg.in/tucnak/telebot.v2

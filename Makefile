@@ -3,24 +3,20 @@
 ##
 
 SHELL      = /bin/bash
+GO            ?= go
+
 # application name
 PRG        ?= teleproxy
 # Config filename, hardcoded in docker-compose
 CFG         = .env
 # docker compose name
 SERVICE     = $(PRG)
-# Where are sources
-CMDS        = $(PRG)
 
 DIRDIST   ?= dist
 ALLARCH   ?= "linux/amd64"
 # linux/386 windows/amd64 darwin/386"
 
-# Local run vars
-LOG        ?= $(PRGBIN).log
-PID        ?= $(PRGBIN).pid
-
-# Docker imege build vars
+# Docker image build vars
 # docker-compose version
 DC_VER        = 1.14.0
 # golang version
@@ -57,11 +53,56 @@ export
 ## Available targets are:
 ##
 
-build:
-	for d in $(CMDS) ; do pushd cmd/$$d > /dev/null && make build && popd > /dev/null ; done
+## build and run in foreground
+run: build
+	./$(PRG) --log_level debug --group $$GROUP --token $$TOKEN
 
+# --DSN $$DSN
+
+## Build cmds
+build: gen $(PRG)
+
+## Generate protobuf/mock/bindata
+gen: cmd/$(PRG)/bindata.go
+
+cmd/$(PRG)/bindata.go: messages.tmpl
+	$(GO) generate ./cmd/$(PRG)/...
+
+## Build command
+$(PRG): cmd/$(PRG)/*.go $(SOURCES)
+	[ -d .git ] && GH=`git rev-parse HEAD` || GH=nogit ; \
+	  GOOS=$(OS) GOARCH=$(ARCH) $(GO) build -v -o $@ -ldflags \
+	  "-X main.Build=$(STAMP) -X main.Commit=$$GH" ./cmd/$@
+
+## Build command for scratch docker
+build-standalone: lint vet gen
+	[ -d .git ] && GH=`git rev-parse HEAD` || GH=nogit ; \
+	  $(GO) build -a -v -o $(PRG) -ldflags \
+	  "-X main.Build=$(STAMP) -X main.Commit=$$GH" ./cmd/$(PRG)
+
+## run go lint
+lint:
+	@echo "*** $@ ***"
+	@golint cmd/$(PRG)/*.go
+
+## run go vet
+vet:
+	@echo "*** $@ ***"
+	@go vet cmd/$(PRG)/*.go
+
+# install vendor deps
+vendor:
+	@echo "*** $@ ***"
+	which glide > /dev/null || curl https://glide.sh/get | sh
+	@echo "*** $@:glide ***"
+	glide install
+
+# clean binary
 clean:
-	for d in $(CMDS) ; do pushd cmd/$$d > /dev/null && make clean && popd > /dev/null ; done
+	@[ -f $(APP) ] && rm $(APP) || true
+	@[ -d vendor ] && rm -rf vendor || true
+
+# ------------------------------------------------------------------------------
 
 ## Build docker image if none
 docker:
@@ -87,25 +128,6 @@ start-hook: up
 update: up
 
 stop: down
-
-# ------------------------------------------------------------------------------
-# Local run without docker
-
-restart: end run
-
-end:
-	@echo "*** $@ ***"
-	@[ -f $(PID) ] && kill -SIGTERM `cat $(PID)` || echo "No pidfile"
-	@[ -f $(PID) ] && rm $(PID) || true
-
-run: build
-	@echo "*** $@ ***"
-	@nohup cmd/$(PRG)/$(PRG) --log_level debug --group $$BOT_GROUP --token $$BOT_TOKEN >>$(LOG) 2>&1 & echo $$! > $(PID)
-	@echo "Started, pid=`cat $(PID)`"
-
-status:
-	@echo "*** $@ ***"
-	@[ -f $(PID) ] && kill -0 `cat $(PID)` && echo "running" || echo "No such process"
 
 # ------------------------------------------------------------------------------
 # Distro ops

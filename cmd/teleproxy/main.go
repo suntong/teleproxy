@@ -1,10 +1,11 @@
+//go:generate go-bindata -pkg $GOPACKAGE -prefix ../../ -o bindata.go ../../messages.tmpl
+
 package main
 
 import (
 	"fmt"
 	"os"
 	"os/signal"
-	"path"
 	"runtime"
 	"syscall"
 	"time"
@@ -12,25 +13,25 @@ import (
 	"github.com/jessevdk/go-flags"
 
 	"github.com/LeKovr/go-base/database"
-	"github.com/LeKovr/go-base/logger"
+	"github.com/LeKovr/go-base/log"
 )
 
 // -----------------------------------------------------------------------------
 
 // Flags defines local application flags
 type Flags struct {
-	Group    int64    `long:"group"    description:"Telegram group ID (without -)"`
-	Token    string   `long:"token"    description:"Bot token"`
-	Template string   `long:"template" default:"messages.gohtml" description:"Message template"`
-	Commands []string `long:"command"  description:"Allowed command(s)"`
-	Version  bool     `long:"version"  description:"Show version and exit"`
+	Group    int64  `long:"group"    description:"Telegram group ID (without -)"`
+	Token    string `long:"token"    description:"Bot token"`
+	Template string `long:"template" description:"Message template"`
+	Command  string `long:"command"  description:"External command file"`
+	Version  bool   `long:"version"  description:"Show version and exit"`
 }
 
 // Config defines all of application flags
 type Config struct {
 	Flags
-	Logger logger.Flags   `group:"Logging Options"`
-	DB     database.Flags `group:"Database Options"`
+	Log LogConfig      `group:"Logging Options"`
+	DB  database.Flags `group:"Database Options"`
 }
 
 // -----------------------------------------------------------------------------
@@ -58,33 +59,32 @@ func main() {
 
 	var cfg Config
 	log, db, _ := setUp(&cfg)
-	defer log.Close()
 
-	Program := path.Base(os.Args[0])
-	log.Infof("%s v %s. Telegram proxy bot", Program, Version)
-	log.Println("Copyright (C) 2017, Alexey Kovrizhkin <ak@elfire.ru>")
+	log.Printf("teleproxy v %s. Telegram proxy bot", Version)
+	log.Print("Copyright (C) 2017, Alexey Kovrizhkin <ak@elfire.ru>")
 
 	app := Application{
-		Log: log,
-		DB:  db,
+		Config: &cfg,
+		Log:    log,
+		DB:     db,
 	}
 
 	signalChannel := make(chan os.Signal, 2)
 	signal.Notify(signalChannel, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		sig := <-signalChannel
-		log.Infof("Got signal %v", sig)
-		app.Close()
+		log.Printf("info: Got signal %v", sig)
+		os.Exit(0)
 	}()
 
-	app.Run(cfg)
+	app.Run()
 
 	os.Exit(0)
 }
 
 // -----------------------------------------------------------------------------
 
-func setUp(cfg *Config) (log *logger.Log, db *database.DB, err error) {
+func setUp(cfg *Config) (lg log.Logger, db *database.DB, err error) {
 
 	_, err = flags.Parse(cfg)
 	if err != nil {
@@ -104,20 +104,18 @@ func setUp(cfg *Config) (log *logger.Log, db *database.DB, err error) {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	// Create a new instance of the logger
-	log, err = logger.New(logger.Dest(cfg.Logger.Dest), logger.Level(cfg.Logger.Level))
-	if err != nil {
-		panic("Logger init error: " + err.Error())
-	}
+	lg, err = NewLog(cfg.Log)
+	exitOnError(nil, err, "Parse loglevel")
 
 	// Setup database
 	db, err = database.New(cfg.DB.Driver, cfg.DB.Connect, database.Debug(cfg.DB.Debug))
-	stopOnError(log, err, "DB init")
+	exitOnError(lg, err, "DB init")
 
 	// Sync database
 	err = db.Engine.Sync(new(Customer))
-	stopOnError(log, err, "DB customer sync")
+	exitOnError(lg, err, "DB customer sync")
 	err = db.Engine.Sync(new(Record))
-	stopOnError(log, err, "DB record sync")
+	exitOnError(lg, err, "DB record sync")
 
 	// group id in config > 0 but we need < 0
 	cfg.Group = cfg.Group * -1
@@ -127,10 +125,13 @@ func setUp(cfg *Config) (log *logger.Log, db *database.DB, err error) {
 
 // -----------------------------------------------------------------------------
 
-// stopOnError used internally for fatal errors checking
-func stopOnError(log *logger.Log, err error, info string) {
+func exitOnError(lg log.Logger, err error, msg string) {
 	if err != nil {
-		log.Fatalf("Error with %s: %v", info, err)
+		if lg != nil {
+			lg.Printf("error: %s error: %s", msg, err.Error())
+		} else {
+			fmt.Printf("error: %s error: %s", msg, err.Error())
+		}
+		os.Exit(1)
 	}
-
 }

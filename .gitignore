@@ -2,3 +2,6 @@ dist
 .env*
 *.db
 messages_*.gohtml
+vendor
+cmd/teleproxy/bindata.go
+teleproxy

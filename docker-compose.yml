@@ -6,7 +6,7 @@ services:
 
   teleproxy:
     command:
-      --group ${BOT_GROUP} --token ${BOT_TOKEN} --db_connect /data/teleproxy.db
+      --group ${GROUP} --token ${TOKEN} --db_connect /data/teleproxy.db
 #    networks:
 #      - web
     labels:

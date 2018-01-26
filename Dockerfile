@@ -16,8 +16,9 @@ WORKDIR /go/src/github.com/LeKovr/teleproxy
 COPY .git .git
 # Sources
 COPY cmd cmd
-# make build
+COPY messages.tmpl messages.tmpl
 COPY Makefile .
+COPY glide.* ./
 
 #sqlite3 is a cgo package
 #ENV CGO_ENABLED=0
@@ -26,7 +27,10 @@ ENV GOOS=linux
 ENV BUILD_FLAG=-a
 #"-tags netgo -a -v"
 
-RUN make build
+RUN go get -u github.com/golang/lint/golint
+RUN go get -u github.com/jteeuwen/go-bindata/...
+RUN make vendor
+RUN make build-standalone
 
 # ------------------------------------------------------------------------------
 
@@ -37,12 +41,13 @@ FROM alpine:3.6
 RUN apk add --no-cache make bash curl
 
 WORKDIR /
-COPY --from=0 /go/src/github.com/LeKovr/teleproxy/cmd/teleproxy/teleproxy .
+COPY --from=0 /go/src/github.com/LeKovr/teleproxy/teleproxy .
 # Need for SSL
 COPY --from=0 /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 # Templates sample
-COPY messages.gohtml /
+COPY messages.tmpl /
+COPY commands.sh /
 
 ENTRYPOINT ["/teleproxy"]
 
