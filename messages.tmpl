@@ -28,14 +28,14 @@
 Пользователь {{ .User.Code }} заблокирован
 {{ else if eq .Tag "errState0"}}
 Ошибка разблокировки пользователя {{ .User.Code }}: {{ .Text }}
-{{ else if eq .Tag "errN.Tag" }}
-Неизвестная команда: {{ .Text }}
 {{ else if eq .Tag "userState0"}}
 Пользователь {{ .User.Code }} разблокирован
 {{ else if eq .Tag "userStateKeep"}}
 Статус пользователя {{ .User.Code }} совпадает с запрошенным
 {{ else if eq .Tag "cmdRequest" }}
 Выполняю команду: {{ .Text }}
+{{ else if eq .Tag "errNoCmdFile" }}
+Поддержка внешних команд не активирована
 {{ else if eq .Tag "errNoCmd" }}
 Неизвестная команда: {{ .Text }}
 {{ else }}

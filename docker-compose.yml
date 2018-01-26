@@ -6,24 +6,21 @@ services:
 
   teleproxy:
     command:
-      --group ${GROUP} --token ${TOKEN} --db_connect /data/teleproxy.db
-#    networks:
-#      - web
+      --group ${GROUP} --token ${TOKEN} --db_connect ${DSN}
+    networks:
+      - web
     labels:
       - "traefik.enable=false"
     volumes:
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
-#      - ./messages.gohtml:/messages.gohtml:ro
       - ./../../teleproxy-data:/data
     build:
       context: .
-      args:
-        - golang_version
 
 # uncomment networks to use db container
 
-#networks:
-#  web:
-#    external:
-#      name: ${DCAPE_NET}
+networks:
+  web:
+    external:
+      name: ${DCAPE_NET}

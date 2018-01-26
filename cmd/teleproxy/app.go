@@ -27,6 +27,8 @@ type Application struct {
 	messages chan telebot.Message
 }
 
+// -----------------------------------------------------------------------------
+
 // Say loads message from template and sais it to chat
 func (app Application) Say(code string, chat telebot.Recipient, user Customer, text string) {
 	vars := struct {
@@ -39,26 +41,30 @@ func (app Application) Say(code string, chat telebot.Recipient, user Customer, t
 		user,
 	}
 	buf := new(bytes.Buffer)
-	//err :=
-	app.template.Execute(buf, vars)
-
-	app.Log.Printf("debug: Send %s(%s) to %+v", code, buf.String(), chat)
-
-	app.bot.Send(chat, buf.String())
-
+	err := app.template.ExecuteTemplate(buf, "messages.tmpl", vars)
+	if err != nil {
+		app.Log.Printf("warn: template %s exec error: %+v", code, err)
+	} else {
+		app.Log.Printf("debug: Send %s(%s) to %+v", code, buf.String(), chat)
+		app.bot.Send(chat, buf.String())
+	}
 }
 
 // -----------------------------------------------------------------------------
 
 // Exec runs external command
-func (app Application) Exec(cmd string, chat telebot.Recipient) {
+func (app Application) Exec(chat telebot.Recipient, cmd ...string) {
 
-	out, err := exec.Command("./commands.sh", cmd).Output()
+	if app.Config.Command == "" {
+		app.Say("errNoCmdFile", chat, Customer{}, cmd[0])
+		return
+	}
+	out, err := exec.Command(app.Config.Command, cmd...).Output()
 	// Записать в логи результат скрипта
 	if err != nil {
 		app.Log.Printf("warn: cmd ERROR: %+v (%s)", err, out)
 		if err.Error() == "exit status 2" {
-			app.Say("errNoCmd", chat, Customer{}, cmd)
+			app.Say("errNoCmd", chat, Customer{}, cmd[0])
 		} else {
 			app.bot.Send(chat, "*Ошибка:* "+err.Error(), &telebot.SendOptions{ParseMode: telebot.ModeMarkdown})
 		}
@@ -125,10 +131,11 @@ func (app *Application) Run() {
 
 	var tmpl *template.Template
 	if app.Config.Template != "" {
-		tmpl, err = template.New("").ParseFiles(app.Config.Template)
+		app.Log.Printf("debug: Load template: %s", app.Config.Template)
+		tmpl, err = template.New("messages.tmpl").ParseFiles(app.Config.Template)
 	} else {
 		b, _ := Asset("messages.tmpl")
-		tmpl, err = template.New("").Parse(string(b))
+		tmpl, err = template.New("messages.tmpl").Parse(string(b))
 	}
 	exitOnError(app.Log, err, "Template load")
 	app.template = tmpl
@@ -187,7 +194,7 @@ func (app *Application) Handler(message *telebot.Message) {
 			if err != nil {
 				// run internal command
 				app.Say("cmdRequest", message.Chat, sender, reply[0])
-				go app.Exec(reply[0], message.Chat)
+				go app.Exec(message.Chat, reply[0])
 				return
 			}
 			// will show customer info
