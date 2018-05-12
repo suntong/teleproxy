@@ -1,0 +1,43 @@
+{{if eq .Tag "welcome"}}
+  {{if ne .User.FirstName ""}} {{.User.FirstName}} {{else}} {{.User.Username}} {{end}}, welcome to support!
+How can we help?
+{{else if eq .Tag "info"}}
+{{if eq .Text ".new"}} New client {{end}}
+  {{.User.Code}} =
+  FirstName: {{.User.FirstName}}
+  LastName: {{.User.LastName}}
+  Username: @ {{.User.Username}}
+{{else if eq .Tag "hello"}}
+Hello, {{.User.FirstName}}!
+{{else if eq .Tag "helpOp"}}
+Response format: / number Response text
+Parts request: / number [=]
+Block: / number -
+Unlock: / number +
+{{else if eq .Tag "errNoDigit"}}
+Invalid format: {{.Text}}, must be a number
+{{else if eq .Tag "errNoUser"}}
+Unknown recipient: {{.Text}}
+{{else if eq .Tag "message"}}
+{{.User.Code}}: {{.Text}}
+{{else if eq .Tag "userLocked"}}
+Sorry, receiving messages from you is blocked
+{{else if eq .Tag "errState1"}}
+User lockout error {{.User.Code}}: {{.Text}}
+{{else if eq .Tag "userState1"}}
+User {{.User.Code}} is locked
+{{else if eq .Tag "errState0"}}
+Unable to unlock user {{.User.Code}}: {{.Text}}
+{{else if eq .Tag "userState0"}}
+User {{.User.Code}} is unlocked
+{{else if eq .Tag "userStateKeep"}}
+The user status {{.User.Code}} matches the requested
+{{else if eq .Tag "cmdRequest"}}
+I execute the following command: {{.Text}}
+{{else if eq .Tag "errNoCmdFile"}}
+External command support not activated
+{{else if eq .Tag "errNoCmd"}}
+Unknown command: {{.Text}}
+{{else}}
+Unknown message tag: {{.Tag}}
+{{end}}

@@ -6,7 +6,7 @@ services:
 
   teleproxy:
     command:
-      --group ${GROUP} --token ${TOKEN} --db_connect ${DSN}
+      --group ${GROUP} --token ${TOKEN} --db_connect ${DSN} --template ${TEMPLATE}
     networks:
       - web
     labels:

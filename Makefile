@@ -52,6 +52,9 @@ DB_USER            ?= $(DB_NAME)
 # Database user password
 DB_PASS            ?= $(shell < /dev/urandom tr -dc A-Za-z0-9 | head -c14; echo)
 
+# Messages template
+TEMPLATE           ?= messages.en.html
+
 # ------------------------------------------------------------------------------
 
 -include .env
@@ -68,7 +71,7 @@ export
 
 ## build and run in foreground
 run: build
-	./$(PRG) --log_level debug --group $$GROUP --token $$TOKEN --command ./commands.sh --template messages.tmpl
+	./$(PRG) --log_level debug --group $$GROUP --token $$TOKEN --template $$TEMPLATE --command ./commands.sh --template messages.tmpl
 
 ## Build cmds
 build: gen $(PRG)
@@ -201,6 +204,9 @@ CMD_URL=
 
 # dcape network connect to, must be set in .env
 DCAPE_NET=$(DCAPE_NET)
+
+# Messages template
+TEMPLATE=$(TEMPLATE)
 
 endef
 export CONFIG_DEF
