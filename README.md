@@ -53,7 +53,7 @@ make .env
 ```
 Edit .env to suit your needs
 
-## Without docker
+### Without docker
 ```
 # create postgresql database (see man createdb)
 # ...
@@ -62,7 +62,7 @@ Edit .env to suit your needs
 make run
 ```
 
-## With docker
+### With docker
 Required postgresql available via docker network (DCAPE_NET in .env).
 
 ```
