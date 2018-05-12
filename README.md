@@ -19,7 +19,6 @@ This service
 * forwards them to telegram group
 * forwards replies to user
 
-
 Features
 --------
 
@@ -30,9 +29,9 @@ Features
 
 ### ToDo
 
-* tests
-* correct reply on 'joined the group via invite link'
-* file transfer
+* [ ] tests
+* [ ] correct reply on 'joined the group via invite link'
+* [ ] file transfer
 
 Install
 -------
@@ -44,6 +43,44 @@ go get github.com/LeKovr/teleproxy
 ### Download
 
 See [Latest release](https://github.com/LeKovr/teleproxy/latest)
+
+Usage
+-----
+
+```
+# create default config
+make .env
+```
+Edit .env to suit your needs
+
+## Without docker
+```
+# create postgresql database (see man createdb)
+# ...
+
+# run standalone
+make run
+```
+
+## With docker
+Required postgresql available via docker network (DCAPE_NET in .env).
+
+```
+# create database
+make db-create DCAPE_DB=running_postgresql_container_name
+
+# build docker image and run docker container
+make up
+```
+
+## See also
+
+```
+# show all Makefile targets
+make help
+```
+
+We use [dcape](https://github.com/dopos/dcape) in our systems.
 
 License
 -------
