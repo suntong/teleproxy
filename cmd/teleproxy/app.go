@@ -41,7 +41,7 @@ func (app Application) Say(code string, chat telebot.Recipient, user Customer, t
 		user,
 	}
 	buf := new(bytes.Buffer)
-	err := app.template.ExecuteTemplate(buf, "messages.tmpl", vars)
+	err := app.template.Execute(buf, vars)
 	if err != nil {
 		app.Log.Printf("warn: template %s exec error: %+v", code, err)
 	} else {
@@ -66,7 +66,7 @@ func (app Application) Exec(chat telebot.Recipient, cmd ...string) {
 		if err.Error() == "exit status 2" {
 			app.Say("errNoCmd", chat, Customer{}, cmd[0])
 		} else {
-			app.bot.Send(chat, "*Ошибка:* "+err.Error(), &telebot.SendOptions{ParseMode: telebot.ModeMarkdown})
+			app.bot.Send(chat, "*ERROR:* "+err.Error(), &telebot.SendOptions{ParseMode: telebot.ModeMarkdown})
 		}
 	} else {
 		app.Log.Printf("warn: cmd OUT: %s", out)
@@ -132,10 +132,10 @@ func (app *Application) Run() {
 	var tmpl *template.Template
 	if app.Config.Template != "" {
 		app.Log.Printf("debug: Load template: %s", app.Config.Template)
-		tmpl, err = template.New("messages.tmpl").ParseFiles(app.Config.Template)
+		tmpl, err = template.ParseFiles(app.Config.Template)
 	} else {
 		b, _ := Asset("messages.tmpl")
-		tmpl, err = template.New("messages.tmpl").Parse(string(b))
+		tmpl, err = template.New("").Parse(string(b))
 	}
 	exitOnError(app.Log, err, "Template load")
 	app.template = tmpl
