@@ -53,7 +53,7 @@ DB_USER            ?= $(DB_NAME)
 DB_PASS            ?= $(shell < /dev/urandom tr -dc A-Za-z0-9 | head -c14; echo)
 
 # Messages template
-TEMPLATE           ?= messages.en.html
+TEMPLATE           ?= messages.en.tmpl
 
 # ------------------------------------------------------------------------------
 
@@ -71,7 +71,7 @@ export
 
 ## build and run in foreground
 run: build
-	./$(PRG) --log_level debug --group $$GROUP --token $$TOKEN --template $$TEMPLATE --command ./commands.sh --template messages.tmpl
+	./$(PRG) --log_level debug --group $$GROUP --token $$TOKEN --template $$TEMPLATE --command ./commands.sh
 
 ## Build cmds
 build: gen $(PRG)
@@ -79,7 +79,7 @@ build: gen $(PRG)
 ## Generate protobuf/mock/bindata
 gen: cmd/$(PRG)/bindata.go
 
-cmd/$(PRG)/bindata.go: messages.tmpl
+cmd/$(PRG)/bindata.go: messages.tmpl messages.en.tmpl
 	$(GO) generate ./cmd/$(PRG)/...
 
 ## Build command
@@ -113,7 +113,8 @@ vendor:
 
 # clean binary
 clean:
-	@[ -f $(APP) ] && rm $(APP) || true
+	@[ -f $(PRG) ] && rm $(PRG) || true
+	@[ -f cmd/$(PRG)/bindata.go ] && rm cmd/$(PRG)/bindata.go || true
 	@[ -d vendor ] && rm -rf vendor || true
 
 # ------------------------------------------------------------------------------
