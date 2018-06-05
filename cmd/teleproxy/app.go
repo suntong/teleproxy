@@ -265,7 +265,7 @@ func (app *Application) Handler(message *telebot.Message) {
 			}
 
 			if sender.Disabled < 1 {
-				app.Say("message", group, sender, message.Text)
+				app.bot.Forward(group, message)
 			} else {
 				app.Say("userLocked", message.Chat, sender, "")
 			}
