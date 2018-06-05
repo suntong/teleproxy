@@ -140,9 +140,11 @@ func (app *Application) Run() {
 	exitOnError(app.Log, err, "Template load")
 	app.template = tmpl
 
-	bot.Handle(telebot.OnText, app.Handler)
+	app.Log.Printf("info: Using bot: %s", bot.Me.Username)
+	c, err := bot.ChatByID(strconv.Itoa(int(app.Config.Group)))
+	app.Log.Printf("info: Forwarding to Group: %s %s", c.Username, c.Recipient())
 
-	//app.Log.Printf("Connected bot %s", bot.Identity.Username)
+	bot.Handle(telebot.OnText, app.Handler)
 	bot.Start()
 }
 
