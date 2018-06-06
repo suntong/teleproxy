@@ -12,7 +12,6 @@ import (
 
 	"github.com/jessevdk/go-flags"
 
-	"github.com/LeKovr/go-base/database"
 	"github.com/LeKovr/go-base/log"
 )
 
@@ -30,8 +29,7 @@ type Flags struct {
 // Config defines all of application flags
 type Config struct {
 	Flags
-	Log LogConfig      `group:"Logging Options"`
-	DB  database.Flags `group:"Database Options"`
+	Log LogConfig `group:"Logging Options"`
 }
 
 // -----------------------------------------------------------------------------
@@ -58,7 +56,7 @@ type Record struct {
 func main() {
 
 	var cfg Config
-	log, db, _ := setUp(&cfg)
+	log, _ := setUp(&cfg)
 
 	log.Printf("teleproxy v %s. Telegram proxy bot", Version)
 	log.Print("Copyright (C) 2017, Alexey Kovrizhkin <ak@elfire.ru>")
@@ -66,7 +64,6 @@ func main() {
 	app := Application{
 		Config: &cfg,
 		Log:    log,
-		DB:     db,
 	}
 
 	signalChannel := make(chan os.Signal, 2)
@@ -84,7 +81,7 @@ func main() {
 
 // -----------------------------------------------------------------------------
 
-func setUp(cfg *Config) (lg log.Logger, db *database.DB, err error) {
+func setUp(cfg *Config) (lg log.Logger, err error) {
 
 	_, err = flags.Parse(cfg)
 	if err != nil {
@@ -107,18 +104,8 @@ func setUp(cfg *Config) (lg log.Logger, db *database.DB, err error) {
 	lg, err = NewLog(cfg.Log)
 	exitOnError(nil, err, "Parse loglevel")
 
-	// Setup database
-	db, err = database.New(cfg.DB.Driver, cfg.DB.Connect, database.Debug(cfg.DB.Debug))
-	exitOnError(lg, err, "DB init")
-
-	// Sync database
-	err = db.Engine.Sync(new(Customer))
-	exitOnError(lg, err, "DB customer sync")
-	err = db.Engine.Sync(new(Record))
-	exitOnError(lg, err, "DB record sync")
-
 	// group id in config > 0 but we need < 0
-	cfg.Group = cfg.Group * -1
+	cfg.Group = -cfg.Group
 
 	return
 }

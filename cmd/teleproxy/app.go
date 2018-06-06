@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"fmt"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -11,7 +10,7 @@ import (
 
 	"gopkg.in/tucnak/telebot.v2"
 
-	"github.com/LeKovr/go-base/database"
+	// "github.com/LeKovr/go-base/database"
 	"github.com/LeKovr/go-base/log"
 )
 
@@ -19,8 +18,8 @@ import (
 
 // Application holds app.Say
 type Application struct {
-	Config   *Config
-	DB       *database.DB
+	Config *Config
+	// DB       *database.DB
 	Log      log.Logger
 	bot      *telebot.Bot
 	template *template.Template
@@ -81,33 +80,6 @@ func (u *Customer) loadUser(c *telebot.User) {
 	u.Username = c.Username
 }
 
-// SetState sets user Disabled state
-func (app Application) SetState(state int, chat telebot.Recipient, user Customer) error {
-
-	sql := "update customer set disabled = ? where id = ? and disabled <> ?"
-	res, err := app.DB.Engine.Exec(sql, state, user.ID, state)
-
-	s := fmt.Sprintf("%01d", state)
-	if err != nil {
-		app.Log.Printf("warn: SQL1 error: %s", err.Error())
-		app.Say("errState"+s, chat, user, err.Error())
-		return err
-	}
-	aff, err := res.RowsAffected()
-	if err != nil {
-		app.Log.Printf("warn: SQL2 error: %s", err.Error())
-		app.Say("errState"+s, chat, user, err.Error())
-		return err
-	}
-
-	if aff > 0 {
-		app.Say("userState"+s, chat, user, "")
-	} else {
-		app.Say("userStateKeep", chat, user, "")
-	}
-	return nil
-}
-
 // -----------------------------------------------------------------------------
 
 // Close closes message channel
@@ -152,27 +124,12 @@ func (app *Application) Run() {
 func (app *Application) Handler(message *telebot.Message) {
 
 	group := &telebot.Chat{ID: app.Config.Group, Type: "group"}
-	engine := app.DB.Engine
+	// engine := app.DB.Engine
 
 	inChat := message.Chat.ID == app.Config.Group
 	app.Log.Printf("debug: Sender: %+v", message.Sender)
 	app.Log.Printf("debug: %s: %s", message.Chat.Title, message.Text)
 	sender := Customer{ID: int64(message.Sender.ID)}
-
-	has, _ := engine.Get(&sender) // TODO: err
-	if !has {
-		// new customer or op
-		sender.loadUser(message.Sender)
-
-		if _, err := engine.Insert(&sender); err != nil {
-			app.Log.Printf("error: User add error: %+v", err)
-		}
-		//has, err :=
-		engine.Get(&sender)
-		if !inChat {
-			app.Say("info", group, sender, ".new")
-		}
-	}
 
 	if message.Text == "/hi" {
 		// Say Hi to any user
@@ -210,13 +167,7 @@ func (app *Application) Handler(message *telebot.Message) {
 		}
 
 		var user = Customer{Code: c}
-		has, _ := engine.Get(&user) // TODO: err
-
-		if !has {
-			// customer not found
-			app.Say("errNoUser", message.Chat, sender, reply[0])
-
-		} else if len(reply) == 2 {
+		if len(reply) == 2 {
 			// given customer code & something
 			app.Log.Printf("debug: Customer: %+v", user)
 			switch reply[1] {
@@ -224,27 +175,11 @@ func (app *Application) Handler(message *telebot.Message) {
 				// customer info requested
 				app.Say("info", message.Chat, user, "")
 				return
-			case "-":
-				// lock user
-				if app.SetState(1, message.Chat, user) != nil {
-					return
-				}
-			case "+":
-				// unlock user
-				if app.SetState(0, message.Chat, user) != nil {
-					return
-				}
 			default:
 				// forward reply to customer
 				chat := &telebot.Chat{ID: user.ID, Type: "private"}
 				app.Log.Printf("debug: Send Text(%s) to %+v", reply[1], chat)
 				app.bot.Send(chat, reply[1])
-			}
-
-			// save log
-			rec := Record{ID: user.ID, IDFrom: sender.ID, Message: reply[1]}
-			if _, err := engine.Insert(&rec); err != nil {
-				app.Log.Printf("error: Record add error: %+v", err)
 			}
 
 		}
@@ -259,10 +194,6 @@ func (app *Application) Handler(message *telebot.Message) {
 
 		// other message
 		if sender.Disabled < 2 {
-			rec := Record{ID: sender.ID, Message: message.Text}
-			if _, err := engine.Insert(&rec); err != nil {
-				app.Log.Printf("error: Record add error: %+v", err)
-			}
 
 			if sender.Disabled < 1 {
 				app.bot.Forward(group, message)
