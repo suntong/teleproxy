@@ -53,7 +53,7 @@ type Record struct {
 
 // -----------------------------------------------------------------------------
 
-func main() {
+func old_main() {
 
 	var cfg Config
 	log, _ := setUp(&cfg)
