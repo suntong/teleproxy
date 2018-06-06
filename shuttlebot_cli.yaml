@@ -1,0 +1,101 @@
+# program name, name for the executable
+ProgramName: shuttlebot
+
+PackageName: main
+
+Name: shuttlebot
+Desc: "Telegram Shuttle Bot"
+Text: Toolkit to transfer things for Telegram
+#NumOption: cli.AtLeast(1)
+NumArg: cli.AtLeast(1)
+Global: true
+# this (Self) means that root option is using the self-config .json file
+#Self: true
+
+#UsageLead: "Usage:\\n  shuttlebot [Options] dir [dirs...]"
+
+Options:
+  - Name: LogLevel
+    Type: string
+    Flag: log_level
+    Usage: logging level
+
+  - Name: Verbose
+    Type: cli.Counter
+    Flag: v,verbose
+    Usage: Verbose mode (Multiple -v options increase the verbosity.)
+
+  - Name: Version
+    Type: bool
+    Flag: V,version
+    Usage: Show version and exit
+
+Command:
+
+  - Name: forward
+    Desc: "forwards telegram messages to designated ChatID(s)"
+    Text: 'Usage:\n  shuttlebot forward --log_level debug --id $GROUP --token $TOKEN --template $TEMPLATE --command ./commands.sh'
+    #NumArg: cli.AtLeast(1)
+    NumOption: cli.AtLeast(1)
+    # this (Self) means that the sub option is using the self-config .json file
+    Self: true
+
+    Options:
+      - Name: Self
+        Type: '*forwardT'
+        Flag: c,config
+        Usage: config file
+        Value: cfg_forward.json
+
+      - Name: Token
+        Type: string
+        Flag: 't,token'
+        Usage: The telegram bot token (mandatory)
+        Value: "$SHUTTLEBOT_TOKEN"
+
+      - Name: ID
+        Type: '[]string'
+        Flag: 'i,id'
+        Usage: The telegram ChatID(s) (without -) to forward to (mandatory)
+        Value: "$SHUTTLEBOT_CID"
+
+      - Name: Template
+        Type: string
+        Flag: 'template'
+        Usage: Message template
+        Value: messages.en.tmpl
+
+      - Name: Command
+        Type: string
+        Flag: command
+        Usage: External command file
+        Value: ./commands.sh
+
+      - Name: Daemonize
+        Type: bool
+        Flag: D,daemonize
+        Usage: daemonize the service
+
+  - Name: send
+    Desc: Send file to to the designated ChatID(s)
+    Text: 'Usage:\n  shuttlebot send --token $TOKEN --id $GROUP -i $CHAT --file /path/to/file'
+    NumArg: cli.AtLeast(1)
+    #NumOption: cli.AtLeast(1)
+
+    Options:
+      - Name: Token
+        Type: string
+        Flag: 't,token'
+        Usage: The telegram bot token (mandatory)
+        Value: "$SHUTTLEBOT_TOKEN"
+
+      - Name: ID
+        Type: '[]string'
+        Flag: 'i,id'
+        Usage: The telegram ChatID(s) (without -) to forward to (mandatory)
+        Value: "$SHUTTLEBOT_CID"
+
+      - Name: File
+        Type: string
+        Flag: '*f,file'
+        Usage: The file spec to send (mandatory)

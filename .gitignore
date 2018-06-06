@@ -5,3 +5,8 @@ messages_*.gohtml
 vendor
 bindata.go
 shuttlebot
+
+# Under *nix
+*~
+
+shuttlebot
