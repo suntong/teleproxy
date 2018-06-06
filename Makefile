@@ -6,7 +6,7 @@ SHELL      = /bin/bash
 GO            ?= go
 
 # application name
-PRG        ?= teleproxy
+PRG        ?= shuttlebot
 
 # docker compose name
 SERVICE     = $(PRG)
@@ -19,19 +19,12 @@ ALLARCH   ?= "linux/amd64"
 # docker-compose version
 DC_VER        = 1.14.0
 # golang version
-GO_VER        = 1.9.0-alpine3.6
+GO_VER        = 1.10.1
 
 # Dcape vars
 
 # container prefix
-PROJECT_NAME ?= elfire
-
-# dcape container name prefix
-DCAPE_PROJECT_NAME ?= dcape
-# dcape network attach to
-DCAPE_NET          ?= $(DCAPE_PROJECT_NAME)_default
-# dcape postgresql container name
-DCAPE_DB           ?= $(DCAPE_PROJECT_NAME)_db_1
+PROJECT_NAME ?= $(PRG)
 
 # ------------------------------------------------------------------------------
 # config vars
@@ -77,44 +70,37 @@ run: build
 build: gen $(PRG)
 
 ## Generate protobuf/mock/bindata
-gen: cmd/$(PRG)/bindata.go
+gen: bindata.go
 
-cmd/$(PRG)/bindata.go: messages.tmpl messages.en.tmpl
-	$(GO) generate ./cmd/$(PRG)/...
+bindata.go: messages.tmpl messages.en.tmpl
+	$(GO) generate ./...
 
 ## Build command
-$(PRG): cmd/$(PRG)/*.go $(SOURCES)
-	[ -d .git ] && GH=`git rev-parse HEAD` || GH=nogit ; \
+$(PRG): *.go
+	[ -d .git ] && GH=`git rev-parse HEAD | cut -c1-7` || GH=nogit ; \
 	  GOOS=$(OS) GOARCH=$(ARCH) $(GO) build -v -o $@ -ldflags \
-	  "-X main.Build=$(STAMP) -X main.Commit=$$GH" ./cmd/$@
+	  "-X main.Build=$(STAMP) -X main.Commit=$$GH" 
 
 ## Build command for scratch docker
 build-standalone: lint vet gen
-	[ -d .git ] && GH=`git rev-parse HEAD` || GH=nogit ; \
+	[ -d .git ] && GH=`git rev-parse HEAD | cut -c1-7` || GH=nogit ; \
 	  $(GO) build -a -v -o $(PRG) -ldflags \
-	  "-X main.Build=$(STAMP) -X main.Commit=$$GH" ./cmd/$(PRG)
+	  "-X main.Build=$(STAMP) -X main.Commit=$$GH" ./
 
 ## run go lint
 lint:
 	@echo "*** $@ ***"
-	@golint cmd/$(PRG)/*.go
+	@golint *.go
 
 ## run go vet
 vet:
 	@echo "*** $@ ***"
-	@go vet cmd/$(PRG)/*.go
-
-# install vendor deps
-vendor:
-	@echo "*** $@ ***"
-	which glide > /dev/null || curl https://glide.sh/get | sh
-	@echo "*** $@:glide ***"
-	glide install
+	@go vet *.go
 
 # clean binary
 clean:
 	@[ -f $(PRG) ] && rm $(PRG) || true
-	@[ -f cmd/$(PRG)/bindata.go ] && rm cmd/$(PRG)/bindata.go || true
+	@[ -f bindata.go ] && rm bindata.go || true
 	@[ -d vendor ] && rm -rf vendor || true
 
 # ------------------------------------------------------------------------------
@@ -149,20 +135,17 @@ stop: down
 
 ## build app for all platforms
 buildall:
-	@pushd cmd/$(PRG) > /dev/null
 	@for a in "$(ALLARCH)" ; do \
 	  echo "** $${a%/*} $${a#*/}" ; \
 	  P=$(PRG)_$${a%/*}_$${a#*/} ; \
 	  [ "$${a%/*}" == "windows" ] && P=$$P.exe ; \
 	  GOOS=$${a%/*} GOARCH=$${a#*/} $(MAKE) -s build ; \
 	@done
-	@popd > /dev/null
 
 ## create disro files
 dist: clean-dist buildall
 	@echo "*** $@ ***"
 	@[ -d $(DIRDIST) ] || mkdir $(DIRDIST) ; \
-	@pushd cmd/$(PRG) > /dev/null
 	sha256sum $(PRG)* > ../../$(DIRDIST)/SHA256SUMS ; \
 	@for a in "$(ALLARCH)" ; do \
 	  echo "** $${a%/*} $${a#*/}" ; \
@@ -170,7 +153,6 @@ dist: clean-dist buildall
 	  [ "$${a%/*}" == "windows" ] && P1=$$P.exe || P1=$$P ; \
 	  zip "../../$(DIRDIST)/$$P.zip" "$$P1" README.md ; \
 	done
-	@popd > /dev/null
 
 ## clean generated files
 clean-dist:

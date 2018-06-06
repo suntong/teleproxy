@@ -1,4 +1,4 @@
-//go:generate go-bindata -pkg $GOPACKAGE -prefix ../../ -o bindata.go ../../messages.tmpl
+//go:generate go-bindata -pkg $GOPACKAGE -prefix ./ -o bindata.go ./messages.tmpl
 
 package main
 

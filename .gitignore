@@ -3,5 +3,5 @@ dist
 *.db
 messages_*.gohtml
 vendor
-cmd/teleproxy/bindata.go
-teleproxy
+bindata.go
+shuttlebot
