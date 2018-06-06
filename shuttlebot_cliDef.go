@@ -64,7 +64,7 @@ var root = &cli.Command{
 
 // Function main
 //  func main() {
-//  	cli.SetUsageStyle(cli.ManualStyle) // up-down, for left-right, use NormalStyle
+//  	cli.SetUsageStyle(cli.DenseNormalStyle) // left-right, for up-down, use ManualStyle
 //  	//NOTE: You can set any writer implements io.Writer
 //  	// default writer is os.Stdout
 //  	if err := cli.Root(root,
@@ -99,12 +99,17 @@ var root = &cli.Command{
 //  	Opts.LogLevel, Opts.Verbose, Opts.Version, Opts.Verbose =
 //  		rootArgv.LogLevel, rootArgv.Verbose, rootArgv.Version, rootArgv.Verbose.Value()
 //  	return nil
+//  	//return DoForward()
+//  }
+//
+//  func DoForward() error {
+//  	return nil
 //  }
 
 type forwardT struct {
 	Self      *forwardT `cli:"c,config" usage:"config file" json:"-" parser:"jsonfile" dft:"cfg_forward.json"`
 	Token     string    `cli:"t,token" usage:"The telegram bot token (mandatory)" dft:"$SHUTTLEBOT_TOKEN"`
-	ID        []string  `cli:"i,id" usage:"The telegram ChatID(s) (without -) to forward to (mandatory)" dft:"$SHUTTLEBOT_CID"`
+	ChatID    []string  `cli:"i,id" usage:"The telegram ChatID(s) (without -) to forward to (mandatory)" dft:"$SHUTTLEBOT_CID"`
 	Template  string    `cli:"template" usage:"Message template" dft:"messages.en.tmpl"`
 	Command   string    `cli:"command" usage:"External command file" dft:"./commands.sh"`
 	Daemonize bool      `cli:"D,daemonize" usage:"daemonize the service"`
@@ -130,21 +135,25 @@ var forwardDef = &cli.Command{
 //  	Opts.LogLevel, Opts.Verbose, Opts.Version, Opts.Verbose =
 //  		rootArgv.LogLevel, rootArgv.Verbose, rootArgv.Version, rootArgv.Verbose.Value()
 //  	return nil
+//  	//return DoSend()
+//  }
+//
+//  func DoSend() error {
+//  	return nil
 //  }
 
 type sendT struct {
-	Token string   `cli:"t,token" usage:"The telegram bot token (mandatory)" dft:"$SHUTTLEBOT_TOKEN"`
-	ID    []string `cli:"i,id" usage:"The telegram ChatID(s) (without -) to forward to (mandatory)" dft:"$SHUTTLEBOT_CID"`
-	File  string   `cli:"*f,file" usage:"The file spec to send (mandatory)"`
+	Token  string   `cli:"t,token" usage:"The telegram bot token (mandatory)" dft:"$SHUTTLEBOT_TOKEN"`
+	ChatID []string `cli:"i,id" usage:"The telegram ChatID(s) (without -) to forward to (mandatory)" dft:"$SHUTTLEBOT_CID"`
+	File   string   `cli:"*f,file" usage:"The file spec to send (mandatory)"`
 }
 
 var sendDef = &cli.Command{
 	Name: "send",
 	Desc: "Send file to to the designated ChatID(s)",
-	Text: "Usage:\n  shuttlebot send --token $TOKEN --id $GROUP -i $CHAT --file /path/to/file",
+	Text: "Usage:\n  shuttlebot send --token $TOKEN --id $GROUP -i $CHANNEL --file /path/to/file",
 	Argv: func() interface{} { return new(sendT) },
 	Fn:   sendCLI,
 
-	NumArg:      cli.AtLeast(1),
-	CanSubRoute: true,
+	NumOption: cli.AtLeast(1),
 }

@@ -1,12 +1,11 @@
 dist
 .env*
-*.db
+cfg_forward.json
 messages_*.gohtml
-vendor
 bindata.go
+
 shuttlebot
 
 # Under *nix
 *~
 
-shuttlebot

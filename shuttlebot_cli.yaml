@@ -53,7 +53,7 @@ Command:
         Usage: The telegram bot token (mandatory)
         Value: "$SHUTTLEBOT_TOKEN"
 
-      - Name: ID
+      - Name: ChatID
         Type: '[]string'
         Flag: 'i,id'
         Usage: The telegram ChatID(s) (without -) to forward to (mandatory)
@@ -78,9 +78,9 @@ Command:
 
   - Name: send
     Desc: Send file to to the designated ChatID(s)
-    Text: 'Usage:\n  shuttlebot send --token $TOKEN --id $GROUP -i $CHAT --file /path/to/file'
-    NumArg: cli.AtLeast(1)
-    #NumOption: cli.AtLeast(1)
+    Text: 'Usage:\n  shuttlebot send --token $TOKEN --id $GROUP -i $CHANNEL --file /path/to/file'
+    #NumArg: cli.AtLeast(1)
+    NumOption: cli.AtLeast(1)
 
     Options:
       - Name: Token
@@ -89,7 +89,7 @@ Command:
         Usage: The telegram bot token (mandatory)
         Value: "$SHUTTLEBOT_TOKEN"
 
-      - Name: ID
+      - Name: ChatID
         Type: '[]string'
         Flag: 'i,id'
         Usage: The telegram ChatID(s) (without -) to forward to (mandatory)

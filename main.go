@@ -19,7 +19,7 @@ import (
 
 // Flags defines local application flags
 type Flags struct {
-	Group    int64  `long:"group"    description:"Telegram group ID (without -)"`
+	ChatID   string `long:"group"    description:"Telegram group ID (without -)"`
 	Token    string `long:"token"    description:"Bot token"`
 	Template string `long:"template" description:"Message template"`
 	Command  string `long:"command"  description:"External command file"`
@@ -105,7 +105,7 @@ func setUp(cfg *Config) (lg log.Logger, err error) {
 	exitOnError(nil, err, "Parse loglevel")
 
 	// group id in config > 0 but we need < 0
-	cfg.Group = -cfg.Group
+	cfg.ChatID = "-" + cfg.ChatID
 
 	return
 }

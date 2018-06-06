@@ -113,8 +113,8 @@ func (app *Application) Run() {
 	app.template = tmpl
 
 	app.Log.Printf("info: Using bot: %s (%s)", bot.Me.Username, bot.Me.Recipient())
-	c, err := bot.ChatByID(strconv.Itoa(int(app.Config.Group)))
-	app.Log.Printf("info: Forwarding to Group: %s (%s)", c.Title, c.Recipient())
+	c, err := bot.ChatByID(app.Config.ChatID)
+	app.Log.Printf("info: Forwarding to: %s (%s)", c.Title, c.Recipient())
 
 	bot.Handle(telebot.OnText, app.Handler)
 	bot.Start()
@@ -123,10 +123,11 @@ func (app *Application) Run() {
 // Handler handles received messages
 func (app *Application) Handler(message *telebot.Message) {
 
-	group := &telebot.Chat{ID: app.Config.Group, Type: "group"}
-	// engine := app.DB.Engine
+	gi, err := strconv.ParseInt(app.Config.ChatID, 10, 64)
+	exitOnError(app.Log, err, "ChatID Parsing")
+	group := &telebot.Chat{ID: gi}
 
-	inChat := message.Chat.ID == app.Config.Group
+	inChat := message.Chat.ID == gi
 	app.Log.Printf("debug: Sender: %+v", message.Sender)
 	app.Log.Printf("debug: %s: %s", message.Chat.Title, message.Text)
 	sender := Customer{ID: int64(message.Sender.ID)}
