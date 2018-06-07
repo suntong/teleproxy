@@ -21,7 +21,7 @@ import (
 func forwardCLI(ctx *cli.Context) error {
 	rootArgv = ctx.RootArgv().(*rootT)
 	argv := ctx.Argv().(*forwardT)
-	fmt.Printf("[forward]:\n  %+v\n  %+v\n  %v\n", rootArgv, argv, ctx.Args())
+	//fmt.Printf("[forward]:\n  %+v\n  %+v\n  %v\n", rootArgv, argv, ctx.Args())
 	Opts.LogLevel, Opts.Version, Opts.Verbose =
 		rootArgv.LogLevel, rootArgv.Version, rootArgv.Verbose.Value()
 	//return nil
@@ -46,9 +46,9 @@ func forwardCLI(ctx *cli.Context) error {
 
 func DoForward(app Application) error {
 
-	app.Log.Printf("%s v %s. Telegram Forwarding Shuttle Bot", progname, version)
-	app.Log.Print("Copyright (C) 20118, Tong Sun")
-	app.Log.Print("Copyright (C) 20118, 2017-18, Alexey Kovrizhkin <ak@elfire.ru>")
+	fmt.Printf("%s v %s. Telegram Forwarding Shuttle Bot\n", progname, version)
+	fmt.Println("Copyright (C) 2018, Tong Sun")
+	fmt.Println("Copyright (C) 2017-18, Alexey Kovrizhkin <ak@elfire.ru>")
 
 	signalChannel := make(chan os.Signal, 2)
 	signal.Notify(signalChannel, os.Interrupt, syscall.SIGTERM)
