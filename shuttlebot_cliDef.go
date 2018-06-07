@@ -52,7 +52,7 @@ var root = &cli.Command{
 //  var (
 //          progname  = "shuttlebot"
 //          version   = "0.1.0"
-//          date = "2018-06-06"
+//          date = "2018-06-07"
 
 //  	rootArgv *rootT
 //  	// Opts store all the configurable options
@@ -103,6 +103,8 @@ var root = &cli.Command{
 //  }
 //
 //  func DoForward() error {
+//  	fmt.Printf("%s v %s. forwards telegram messages to designated ChatID(s)\n", progname, version)
+//  	fmt.Println("Copyright (C) 2018, Tong Sun")
 //  	return nil
 //  }
 
@@ -139,6 +141,8 @@ var forwardDef = &cli.Command{
 //  }
 //
 //  func DoSend() error {
+//  	fmt.Printf("%s v %s. Send file to to the designated ChatID(s)\n", progname, version)
+//  	fmt.Println("Copyright (C) 2018, Tong Sun")
 //  	return nil
 //  }
 

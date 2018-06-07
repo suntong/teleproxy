@@ -1,1 +1,1 @@
- easygen -tf ../../suntong/cli/cli-ts shuttlebot_cli | gofmt > shuttlebot_cliDef.go
+ easygen -tf ../../go-easygen/wireframe/cli-std shuttlebot_cli | gofmt > shuttlebot_cliDef.go
