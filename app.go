@@ -91,6 +91,30 @@ func (app Application) Close() {
 
 // -----------------------------------------------------------------------------
 
+// ChatInit inits the Chat array from app.Config.ChatID array
+func (app *Application) ChatInit(dest string) {
+	app.Log.Printf("info: Using bot: %s (%s)",
+		app.bot.Me.Username, app.bot.Me.Recipient())
+	app.Log.Printf(dest)
+
+	app.Chat = make([]*telebot.Chat, 0)
+	for _, cid := range app.Config.ChatID {
+		//app.Log.Printf("debug: cid: %s", cid)
+		if len(cid) == 0 {
+			continue
+		}
+		cid = "-" + cid
+		c, err := app.bot.ChatByID(cid)
+		fmt.Printf("\t  %s (%s)\n", c.Title, c.Recipient())
+
+		gi, err := strconv.ParseInt(cid, 10, 64)
+		exitOnError(app.Log, err, "ChatID Parsing")
+		app.Chat = append(app.Chat, &telebot.Chat{ID: gi})
+	}
+}
+
+// -----------------------------------------------------------------------------
+
 // Run does the deal
 func (app *Application) Run() {
 
@@ -113,19 +137,7 @@ func (app *Application) Run() {
 	exitOnError(app.Log, err, "Template load")
 	app.template = tmpl
 
-	app.Log.Printf("info: Using bot: %s (%s)", bot.Me.Username, bot.Me.Recipient())
-	app.Log.Printf("info: Forwarding to:")
-
-	app.Chat = make([]*telebot.Chat, 0)
-	for _, cid := range app.Config.ChatID {
-		cid = "-" + cid
-		c, err := bot.ChatByID(cid)
-		fmt.Printf("\t  %s (%s)\n", c.Title, c.Recipient())
-
-		gi, err := strconv.ParseInt(cid, 10, 64)
-		exitOnError(app.Log, err, "ChatID Parsing")
-		app.Chat = append(app.Chat, &telebot.Chat{ID: gi})
-	}
+	app.ChatInit("info: Forwarding to:")
 
 	bot.Handle(telebot.OnText, app.Handler)
 	bot.Start()
