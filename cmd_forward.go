@@ -13,6 +13,8 @@ import (
 	"syscall"
 
 	"github.com/go-easygen/cli"
+
+	log "github.com/Sirupsen/logrus"
 )
 
 ////////////////////////////////////////////////////////////////////////////
@@ -25,19 +27,25 @@ func forwardCLI(ctx *cli.Context) error {
 	Opts.LogLevel, Opts.Version, Opts.Verbose =
 		rootArgv.LogLevel, rootArgv.Version, rootArgv.Verbose.Value()
 	//return nil
-	return DoForward()
+
+	var cfg Config
+	cfg.ChatID = "-" + argv.ChatID[0]
+	cfg.Token = argv.Token
+	cfg.Template = argv.Template
+	cfg.Command = argv.Command
+
+	return DoForward(cfg)
 }
 
-func DoForward() error {
-	var cfg Config
-	log, _ := setUp(&cfg)
+func DoForward(cfg Config) error {
 
 	log.Printf("%s v %s. Telegram Forwarding Shuttle Bot", progname, version)
-	log.Print("Copyright (C) 20118, Tong Sun\n\t2017-18, Alexey Kovrizhkin <ak@elfire.ru>")
+	log.Print("Copyright (C) 20118, Tong Sun")
+	log.Print("Copyright (C) 20118, 2017-18, Alexey Kovrizhkin <ak@elfire.ru>")
 
 	app := Application{
 		Config: &cfg,
-		Log:    log,
+		Log:    log.New(),
 	}
 
 	signalChannel := make(chan os.Signal, 2)

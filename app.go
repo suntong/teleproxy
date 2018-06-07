@@ -8,10 +8,9 @@ import (
 	"text/template"
 	"time"
 
-	"gopkg.in/tucnak/telebot.v2"
+	log "github.com/Sirupsen/logrus"
 
-	// "github.com/LeKovr/go-base/database"
-	"github.com/LeKovr/go-base/log"
+	"gopkg.in/tucnak/telebot.v2"
 )
 
 // -----------------------------------------------------------------------------
@@ -20,7 +19,7 @@ import (
 type Application struct {
 	Config *Config
 	// DB       *database.DB
-	Log      log.Logger
+	Log      *log.Logger
 	bot      *telebot.Bot
 	template *template.Template
 	messages chan telebot.Message
