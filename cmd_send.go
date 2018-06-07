@@ -7,6 +7,7 @@
 package main
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/go-easygen/cli"
@@ -42,7 +43,10 @@ func sendCLI(ctx *cli.Context) error {
 
 func DoSend(app Application, theFile string) error {
 
-	app.Log.Printf("info:  Connecting to Telegram...")
+	fmt.Printf("%s v %s. Telegram File sending Shuttle Bot\n", progname, version)
+	fmt.Println("Copyright (C) 2018, Tong Sun")
+
+	app.Log.Printf("info: Connecting to Telegram...")
 	bot, err := tb.NewBot(tb.Settings{
 		Token:  app.Config.Token,
 		Poller: &tb.LongPoller{Timeout: 10 * time.Second},
