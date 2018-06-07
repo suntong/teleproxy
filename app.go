@@ -8,18 +8,17 @@ import (
 	"text/template"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
-
 	"gopkg.in/tucnak/telebot.v2"
+
+	"github.com/LeKovr/go-base/log"
 )
 
 // -----------------------------------------------------------------------------
 
 // Application holds app.Say
 type Application struct {
-	Config *Config
-	// DB       *database.DB
-	Log      *log.Logger
+	Config   *Config
+	Log      log.Logger
 	bot      *telebot.Bot
 	template *template.Template
 	messages chan telebot.Message

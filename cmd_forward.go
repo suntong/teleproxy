@@ -13,8 +13,6 @@ import (
 	"syscall"
 
 	"github.com/go-easygen/cli"
-
-	log "github.com/Sirupsen/logrus"
 )
 
 ////////////////////////////////////////////////////////////////////////////
@@ -34,25 +32,29 @@ func forwardCLI(ctx *cli.Context) error {
 	cfg.Template = argv.Template
 	cfg.Command = argv.Command
 
-	return DoForward(cfg)
-}
-
-func DoForward(cfg Config) error {
-
-	log.Printf("%s v %s. Telegram Forwarding Shuttle Bot", progname, version)
-	log.Print("Copyright (C) 20118, Tong Sun")
-	log.Print("Copyright (C) 20118, 2017-18, Alexey Kovrizhkin <ak@elfire.ru>")
+	// Create a new instance of the logger
+	lg, err := NewLog(LogConfig{Opts.LogLevel})
+	exitOnError(nil, err, "Parse loglevel")
 
 	app := Application{
 		Config: &cfg,
-		Log:    log.New(),
+		Log:    lg,
 	}
+
+	return DoForward(app)
+}
+
+func DoForward(app Application) error {
+
+	app.Log.Printf("%s v %s. Telegram Forwarding Shuttle Bot", progname, version)
+	app.Log.Print("Copyright (C) 20118, Tong Sun")
+	app.Log.Print("Copyright (C) 20118, 2017-18, Alexey Kovrizhkin <ak@elfire.ru>")
 
 	signalChannel := make(chan os.Signal, 2)
 	signal.Notify(signalChannel, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		sig := <-signalChannel
-		log.Printf("info: Got signal %v", sig)
+		app.Log.Printf("info: Got signal %v", sig)
 		os.Exit(0)
 	}()
 

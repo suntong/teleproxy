@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
+	"github.com/LeKovr/go-base/log"
 )
 
 // -----------------------------------------------------------------------------
@@ -48,7 +48,7 @@ type Record struct {
 
 // -----------------------------------------------------------------------------
 
-func exitOnError(lg *log.Logger, err error, msg string) {
+func exitOnError(lg log.Logger, err error, msg string) {
 	if err != nil {
 		if lg != nil {
 			lg.Printf("error: %s error: %s", msg, err.Error())
