@@ -14,11 +14,11 @@ import (
 
 // Flags defines local application flags
 type Flags struct {
-	ChatID   string `long:"group"    description:"Telegram group ID (without -)"`
-	Token    string `long:"token"    description:"Bot token"`
-	Template string `long:"template" description:"Message template"`
-	Command  string `long:"command"  description:"External command file"`
-	Version  bool   `long:"version"  description:"Show version and exit"`
+	ChatID   []string `long:"group"    description:"Telegram group ID (without -)"`
+	Token    string   `long:"token"    description:"Bot token"`
+	Template string   `long:"template" description:"Message template"`
+	Command  string   `long:"command"  description:"External command file"`
+	Version  bool     `long:"version"  description:"Show version and exit"`
 }
 
 // Config defines all of application flags

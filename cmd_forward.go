@@ -27,7 +27,7 @@ func forwardCLI(ctx *cli.Context) error {
 	//return nil
 
 	var cfg Config
-	cfg.ChatID = "-" + argv.ChatID[0]
+	cfg.ChatID = argv.ChatID
 	cfg.Token = argv.Token
 	cfg.Template = argv.Template
 	cfg.Command = argv.Command

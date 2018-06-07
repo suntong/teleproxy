@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -18,6 +19,7 @@ import (
 // Application holds app.Say
 type Application struct {
 	Config   *Config
+	Chat     []*telebot.Chat
 	Log      log.Logger
 	bot      *telebot.Bot
 	template *template.Template
@@ -92,6 +94,7 @@ func (app Application) Close() {
 // Run does the deal
 func (app *Application) Run() {
 
+	app.Log.Printf("info:  Connecting to Telegram...")
 	bot, err := telebot.NewBot(telebot.Settings{
 		Token:  app.Config.Token,
 		Poller: &telebot.LongPoller{Timeout: 10 * time.Second},
@@ -111,8 +114,18 @@ func (app *Application) Run() {
 	app.template = tmpl
 
 	app.Log.Printf("info: Using bot: %s (%s)", bot.Me.Username, bot.Me.Recipient())
-	c, err := bot.ChatByID(app.Config.ChatID)
-	app.Log.Printf("info: Forwarding to: %s (%s)", c.Title, c.Recipient())
+	app.Log.Printf("info: Forwarding to:")
+
+	app.Chat = make([]*telebot.Chat, 0)
+	for _, cid := range app.Config.ChatID {
+		cid = "-" + cid
+		c, err := bot.ChatByID(cid)
+		fmt.Printf("\t  %s (%s)\n", c.Title, c.Recipient())
+
+		gi, err := strconv.ParseInt(cid, 10, 64)
+		exitOnError(app.Log, err, "ChatID Parsing")
+		app.Chat = append(app.Chat, &telebot.Chat{ID: gi})
+	}
 
 	bot.Handle(telebot.OnText, app.Handler)
 	bot.Start()
@@ -121,11 +134,7 @@ func (app *Application) Run() {
 // Handler handles received messages
 func (app *Application) Handler(message *telebot.Message) {
 
-	gi, err := strconv.ParseInt(app.Config.ChatID, 10, 64)
-	exitOnError(app.Log, err, "ChatID Parsing")
-	group := &telebot.Chat{ID: gi}
-
-	inChat := message.Chat.ID == gi
+	inChat := false // message.Chat.ID == gi
 	app.Log.Printf("debug: Sender: %+v", message.Sender)
 	app.Log.Printf("debug: %s: %s", message.Chat.Title, message.Text)
 	sender := Customer{ID: int64(message.Sender.ID)}
@@ -195,7 +204,9 @@ func (app *Application) Handler(message *telebot.Message) {
 		if sender.Disabled < 2 {
 
 			if sender.Disabled < 1 {
-				app.bot.Forward(group, message)
+				for _, chat := range app.Chat {
+					app.bot.Forward(chat, message)
+				}
 			} else {
 				app.Say("userLocked", message.Chat, sender, "")
 			}
