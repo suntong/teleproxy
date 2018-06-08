@@ -41,6 +41,11 @@ func forwardCLI(ctx *cli.Context) error {
 		Log:    lg,
 	}
 
+	if argv.Daemonize {
+		cli.DaemonResponse("[ok] Starting Telegram Forwarding Shuttle Bot")
+		// not exactly working. give up fixing it
+	}
+
 	return DoForward(app)
 }
 
