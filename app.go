@@ -139,12 +139,22 @@ func (app *Application) Run() {
 
 	app.ChatInit("info: Forwarding to:")
 
-	bot.Handle(telebot.OnText, app.Handler)
+	bot.Handle(telebot.OnPhoto, app.HandlerPhoto)
+	bot.Handle(telebot.OnText, app.HandlerText)
 	bot.Start()
 }
 
-// Handler handles received messages
-func (app *Application) Handler(message *telebot.Message) {
+// HandlerPhoto handles received Photo messages
+func (app *Application) HandlerPhoto(message *telebot.Message) {
+	app.Log.Printf("debug: Sender: %+v", message.Sender)
+	app.Log.Printf("debug: %s: %s", message.Chat.Title, message.Text)
+	for _, chat := range app.Chat {
+		app.bot.Forward(chat, message)
+	}
+}
+
+// HandlerText handles received Text messages
+func (app *Application) HandlerText(message *telebot.Message) {
 
 	inChat := false // message.Chat.ID == gi
 	app.Log.Printf("debug: Sender: %+v", message.Sender)
