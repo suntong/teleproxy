@@ -13,6 +13,7 @@ import (
 	"syscall"
 
 	"github.com/go-easygen/cli"
+	"github.com/go-easygen/cli/clil"
 )
 
 ////////////////////////////////////////////////////////////////////////////
@@ -33,7 +34,7 @@ func forwardCLI(ctx *cli.Context) error {
 	cfg.Command = argv.Command
 
 	// Create a new instance of the logger
-	lg, err := NewLog(LogConfig{Opts.LogLevel})
+	lg, err := clil.NewLog(Opts.LogLevel)
 	exitOnError(nil, err, "Parse loglevel")
 
 	app := Application{

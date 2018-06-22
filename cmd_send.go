@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/go-easygen/cli"
+	"github.com/go-easygen/cli/clil"
 
 	tb "gopkg.in/tucnak/telebot.v2"
 )
@@ -26,7 +27,7 @@ func sendCLI(ctx *cli.Context) error {
 		rootArgv.LogLevel, rootArgv.Version, rootArgv.Verbose.Value()
 
 	// Create a new instance of the logger
-	lg, err := NewLog(LogConfig{Opts.LogLevel})
+	lg, err := clil.NewLog(Opts.LogLevel)
 	exitOnError(nil, err, "Parse loglevel")
 
 	var cfg Config

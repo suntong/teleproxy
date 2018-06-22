@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -10,8 +11,6 @@ import (
 	"time"
 
 	"gopkg.in/tucnak/telebot.v2"
-
-	"github.com/LeKovr/go-base/log"
 )
 
 // -----------------------------------------------------------------------------
@@ -20,7 +19,7 @@ import (
 type Application struct {
 	Config   *Config
 	Chat     []*telebot.Chat
-	Log      log.Logger
+	Log      *log.Logger
 	bot      *telebot.Bot
 	template *template.Template
 	messages chan telebot.Message

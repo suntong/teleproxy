@@ -4,10 +4,9 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"time"
-
-	"github.com/LeKovr/go-base/log"
 )
 
 // -----------------------------------------------------------------------------
@@ -24,7 +23,6 @@ type Flags struct {
 // Config defines all of application flags
 type Config struct {
 	Flags
-	Log LogConfig `group:"Logging Options"`
 }
 
 // -----------------------------------------------------------------------------
@@ -48,7 +46,7 @@ type Record struct {
 
 // -----------------------------------------------------------------------------
 
-func exitOnError(lg log.Logger, err error, msg string) {
+func exitOnError(lg *log.Logger, err error, msg string) {
 	if err != nil {
 		if lg != nil {
 			lg.Printf("error: %s error: %s", msg, err.Error())
